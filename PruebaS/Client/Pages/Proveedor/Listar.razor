@@ -1,0 +1,107 @@
+﻿@page "/proveedor/listar"
+@inject NavigationManager nm
+@inject ProveedorRepositorio repositorio
+@inject IJSRuntime js
+@inject MostrarMensajes mostrarMensajes
+
+<div style="text-align:center">
+    <h3>Proveedor</h3>
+</div>
+<div style="margin: 0px 0px 10px 0px" class="form-group">
+    <a class="btn btn-primary" href="proveedor/crear"><i class="oi oi-plus"></i> Agregar Nuevo</a>
+</div>
+@if (proveedores == null)
+{
+    <span>Cargando...</span>
+}
+else if (proveedores.Count == 0)
+{
+    <span>No hay registros en la BD</span>
+}
+else
+{
+    <table class="table table-bordered table-hover">
+        <thead class="thead-light">
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Ruc</th>
+                <th scope="col">Dirección</th>
+                <th scope="col">Telefono</th>
+                <th scope="col">Correo</th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var x in proveedores)
+            {
+                <tr>
+                    <td>@x.Id</td>
+                    <td>@x.Nombre</td>
+                    <td>@x.Ruc</td>
+                    <td>@x.Direccion</td>
+                    <td>@x.Telefono</td>
+                    <td>@x.Correo</td>
+                    <td style="width:20px"><a href="/proveedor/actualizar/@x.Id" class="oi oi-pencil"></a></td>
+                    <td style="width:20px"><a @onclick="@(() => Eliminar(x))" class="oi oi-trash" style="color:red;"></a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+
+
+    @code {
+
+        public List<Proveedor> proveedores { get; set; }
+
+        protected override async Task OnInitializedAsync()
+        {
+            await Cargar();
+
+        }
+        private async Task Cargar()
+        {
+
+            var responseHttp = await repositorio.GetProveedor<List<Proveedor>>($"api/proveedor");
+            if (!responseHttp.Error)
+            {
+                proveedores = responseHttp.Response;
+            }
+        }
+        public async Task Eliminar(Proveedor p)
+        {
+
+            string mensajeConfirmacion = $"¿Esta seguro de eliminar el registro {p.Nombre}?";
+            if (await js.Confirm("Confirmar", mensajeConfirmacion, TipoMensajeSweetAlert.question))
+            {
+                var responseHttp = await repositorio.DeleteProveedor($"api/proveedor/{p.Id}");
+                if (responseHttp.Error)
+                {
+                    if (responseHttp.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        nm.NavigateTo("");
+                    }
+                    else
+                    {
+                        await mostrarMensajes.MostrarMensajeError(await responseHttp.GetBody());
+                    }
+                }
+                else
+                {
+                    await js.Respuesta("Exito", "Su registro ha sido Eliminado", TipoMensajeSweetAlert.success);
+                    await Cargar();
+                }
+            }
+            else
+            {
+                nm.NavigateTo("/proveedor/listar");
+                await Cargar();
+
+            }
+
+
+        }
+    }
+}

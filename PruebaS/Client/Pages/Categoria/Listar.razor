@@ -1,0 +1,99 @@
+﻿@page "/categoria/listar"
+@inject NavigationManager nm
+@inject CategoriaRepositorio repositorio
+@inject IJSRuntime js
+@inject MostrarMensajes mostrarMensajes
+
+<div style="text-align:center">
+    <h3>Categorias</h3>
+</div>
+<div style="margin: 0px 0px 10px 0px" class="form-group">
+    <a class="btn btn-primary" href="categoria/crear"><i class="oi oi-plus"></i> Agregar Nuevo</a>
+</div>
+@if (categorias == null)
+{
+    <span>Cargando...</span>
+}
+else if (categorias.Count == 0)
+{
+    <span>No hay registros en la BD</span>
+}
+else
+{
+<table class="table table-bordered table-hover">
+    <thead class="thead-light">
+        <tr>
+            <th scope="col">Id</th>
+            <th scope="col">Nombre</th>
+            <th scope="col"></th>
+            <th scope="col"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var x in categorias)
+        {
+            <tr>
+                <td>@x.Id</td>
+                <td>@x.Nombre</td>
+                <td style="width:20px"><a href="/categoria/actualizar/@x.Id" class="oi oi-pencil"></a></td>
+                <td style="width:20px"><a @onclick="@(() => Eliminar(x))" class="oi oi-trash" style="color:red;"></a></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+
+
+    @code {
+
+        public List<Categoria> categorias { get; set; }
+
+        protected override async Task OnInitializedAsync()
+        {
+            await Cargar();
+
+        }
+        private async Task Cargar()
+        {
+            
+            var responseHttp = await repositorio.GetCategoria<List<Categoria>>($"api/categoria");
+            if (!responseHttp.Error)
+            {
+                categorias = responseHttp.Response;
+            }
+        }
+        public async Task Eliminar(Categoria c)
+        {
+
+            string mensajeConfirmacion = $"¿Esta seguro de eliminar el registro {c.Nombre}?";
+            if (await js.Confirm("Confirmar", mensajeConfirmacion, TipoMensajeSweetAlert.question))
+            {
+                var responseHttp = await repositorio.DeleteCategoria($"api/categoria/{c.Id}");
+                if (responseHttp.Error)
+                {
+                    if (responseHttp.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        nm.NavigateTo("");
+                    }
+                    else
+                    {
+                        await mostrarMensajes.MostrarMensajeError(await responseHttp.GetBody());
+                    }
+                }
+                else
+                {
+                    await js.Respuesta("Exito", "Su registro ha sido Eliminado", TipoMensajeSweetAlert.success);
+                    await Cargar();
+                }
+            }
+            else
+            {
+                nm.NavigateTo("/categoria/listar");
+                await Cargar();
+
+            }
+
+
+        }
+    }
+}

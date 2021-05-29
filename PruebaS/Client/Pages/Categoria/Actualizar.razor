@@ -1,0 +1,59 @@
+﻿@page "/categoria/actualizar/{CategoriaId:int}";
+@inject CategoriaRepositorio repositorio;
+@inject MostrarMensajes mostrarMensaje;
+@inject NavigationManager navigationManager;
+@inject IJSRuntime js
+
+<div class="form-group mx-sm-3 mb-2" style="text-align:center">
+    <h3>Editar Categoria</h3>
+</div>
+@if (categoria == null)
+{
+    <text>Cargando...</text>
+}
+else
+{
+    <FormularioCategoria OnValidSubmit="Editar" categoria="categoria"></FormularioCategoria>
+}
+
+@code {
+    [Parameter] public int categoriaId { get; set; }
+    private Categoria categoria;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var httpResponse = await repositorio.GetCategoria<Categoria>($"api/categoria/{categoriaId}");
+        if (httpResponse.Error)
+        {
+            if (httpResponse.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("categoria/listar");
+            }
+            else
+            {
+                await mostrarMensaje.MostrarMensajeError(await httpResponse.GetBody());
+            }
+            categoria = httpResponse.Response;
+        }
+
+        else
+        {
+            categoria = httpResponse.Response;
+        }
+    }
+    private async Task Editar()
+    {
+        var httpResponse = await repositorio.PutCategoria("api/categoria", categoria);
+        if (httpResponse.Error)
+        {
+            await js.Respuesta("Error", "Su registro no ha sido guardado verifique los datos ingresados, comuniquese con el desarrollador si el error persiste", TipoMensajeSweetAlert.error);
+            await mostrarMensaje.MostrarMensajeError(await httpResponse.GetBody());
+            navigationManager.NavigateTo("/categoria/actualizar");
+        }
+        else
+        {
+            await js.Respuesta("Exito", "Registro Actualizado Correctamente", TipoMensajeSweetAlert.success);
+            navigationManager.NavigateTo("categoria/listar");
+        }
+    }
+}

@@ -1,0 +1,107 @@
+﻿@page "/producto/listar"
+@inject NavigationManager nm
+@inject ProductoRepositorio repositorio
+@inject IJSRuntime js
+@inject MostrarMensajes mostrarMensajes
+
+<div style="text-align:center">
+    <h3>Productos</h3>
+</div>
+<div style="margin: 0px 0px 10px 0px" class="form-group">
+    <a class="btn btn-primary" href="producto/crear"><i class="oi oi-plus"></i> Agregar Nuevo</a>
+</div>
+@if (productos == null)
+{
+    <span>Cargando...</span>
+}
+else if (productos.Count == 0)
+{
+    <span>No hay registros en la BD</span>
+}
+else
+{
+    <table class="table table-bordered table-hover">
+        <thead class="thead-light">
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Descripción</th>
+                <th scope="col">Marca</th>
+                <th scope="col">Medida</th>
+                <th scope="col">Cantidad</th>
+                <th scope="col">Precio U</th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var x in productos)
+            {
+            <tr>
+                <td>@x.Id</td>
+                <td>@x.Descripcion</td>
+                <td>@x.Marca</td>
+                <td>@x.Medida</td>
+                <td>@x.Cantidad</td>
+                <td>@x.PrecioUnitario</td>
+                <td style="width:20px"><a href="/producto/actualizar/@x.Id" class="oi oi-pencil"></a></td>
+                <td style="width:20px"><a @onclick="@(() => Eliminar(x))" class="oi oi-trash" style="color:red;"></a></td>
+            </tr>
+            }
+        </tbody>
+    </table>
+
+
+
+    @code {
+
+        public List<Producto> productos { get; set; }
+
+        protected override async Task OnInitializedAsync()
+        {
+            await Cargar();
+
+        }
+        private async Task Cargar()
+        {
+
+            var responseHttp = await repositorio.GetProducto<List<Producto>>($"api/producto");
+            if (!responseHttp.Error)
+            {
+                productos = responseHttp.Response;
+            }
+        }
+        public async Task Eliminar(Producto p)
+        {
+
+            string mensajeConfirmacion = $"¿Esta seguro de eliminar el registro {p.Descripcion}?";
+            if (await js.Confirm("Confirmar", mensajeConfirmacion, TipoMensajeSweetAlert.question))
+            {
+                var responseHttp = await repositorio.DeleteProducto($"api/producto/{p.Id}");
+                if (responseHttp.Error)
+                {
+                    if (responseHttp.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        nm.NavigateTo("");
+                    }
+                    else
+                    {
+                        await mostrarMensajes.MostrarMensajeError(await responseHttp.GetBody());
+                    }
+                }
+                else
+                {
+                    await js.Respuesta("Exito", "Su registro ha sido Eliminado", TipoMensajeSweetAlert.success);
+                    await Cargar();
+                }
+            }
+            else
+            {
+                nm.NavigateTo("/producto/listar");
+                await Cargar();
+
+            }
+
+
+        }
+    }
+}

@@ -1,0 +1,34 @@
+﻿@page "/proveedor/crear";
+@inject ProveedorRepositorio repositorio
+@inject NavigationManager navigatioMAnager
+@inject IMostrarMensajes mostrarMensajes
+@inject IJSRuntime js
+
+<div class="form-group mx-sm-3 mb-2" style="text-align:center">
+    <h3>Crear Proveedor</h3>
+</div>
+
+<FormularioProveedor OnValidSubmit="CrearProveedor" proveedor="proveedor"></FormularioProveedor>
+
+@code {
+    private Proveedor proveedor = new Proveedor();
+    private async Task CrearProveedor()
+    {
+
+        var httpResponse = await repositorio.PostProveedor("api/proveedor", proveedor);
+        if (httpResponse.Error)
+        {
+            var body = await httpResponse.HttpResponseMessage.Content.ReadAsStringAsync();
+            Console.WriteLine(body);
+            await js.Respuesta("Error", "Su registro no ha sido guardado verifique los datos ingresados, comuniquese con el desarrollador si el error persiste", TipoMensajeSweetAlert.error);
+            navigatioMAnager.NavigateTo("/proveedor/crear");
+        }
+        else
+        {
+            await js.Respuesta("Exito", "Su registro ha sido Guardado", TipoMensajeSweetAlert.success);
+            navigatioMAnager.NavigateTo("/proveedor/listar");
+
+        }
+
+    }
+}

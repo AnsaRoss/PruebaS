@@ -1,0 +1,34 @@
+﻿@page "/producto/crear";
+@inject ProductoRepositorio repositorio
+@inject NavigationManager navigatioMAnager
+@inject IMostrarMensajes mostrarMensajes
+@inject IJSRuntime js
+
+<div class="form-group mx-sm-3 mb-2" style="text-align:center">
+    <h3>Crear Producto</h3>
+</div>
+
+<FormularioProducto OnValidSubmit="CrearProducto" producto="producto"></FormularioProducto>
+
+@code {
+    private Producto producto = new Producto();
+    private async Task CrearProducto()
+    {
+
+        var httpResponse = await repositorio.PostProducto("api/producto", producto);
+        if (httpResponse.Error)
+        {
+            var body = await httpResponse.HttpResponseMessage.Content.ReadAsStringAsync();
+            Console.WriteLine(body);
+            await js.Respuesta("Error", "Su registro no ha sido guardado verifique los datos ingresados, comuniquese con el desarrollador si el error persiste", TipoMensajeSweetAlert.error);
+            navigatioMAnager.NavigateTo("/producto/crear");
+        }
+        else
+        {
+            await js.Respuesta("Exito", "Su registro ha sido Guardado", TipoMensajeSweetAlert.success);
+            navigatioMAnager.NavigateTo("/producto/listar");
+
+        }
+
+    }
+}

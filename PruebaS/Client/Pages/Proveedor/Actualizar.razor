@@ -1,0 +1,59 @@
+﻿@page "/proveedor/actualizar/{ProveedorId:int}";
+@inject ProveedorRepositorio repositorio;
+@inject MostrarMensajes mostrarMensaje;
+@inject NavigationManager navigationManager;
+@inject IJSRuntime js
+
+<div class="form-group mx-sm-3 mb-2" style="text-align:center">
+    <h3>Editar Producto</h3>
+</div>
+@if (proveedor == null)
+{
+    <text>Cargando...</text>
+}
+else
+{
+    <FormularioProveedor OnValidSubmit="Editar" proveedor="proveedor"></FormularioProveedor>
+}
+
+@code {
+    [Parameter] public int proveedorId { get; set; }
+    private Proveedor proveedor;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var httpResponse = await repositorio.GetProveedor<Proveedor>($"api/proveedor/{proveedorId}");
+        if (httpResponse.Error)
+        {
+            if (httpResponse.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("proveedor/listar");
+            }
+            else
+            {
+                await mostrarMensaje.MostrarMensajeError(await httpResponse.GetBody());
+            }
+            proveedor = httpResponse.Response;
+        }
+
+        else
+        {
+            proveedor = httpResponse.Response;
+        }
+    }
+    private async Task Editar()
+    {
+        var httpResponse = await repositorio.PutProveedor("api/proveedor", proveedor);
+        if (httpResponse.Error)
+        {
+            await js.Respuesta("Error", "Su registro no ha sido guardado verifique los datos ingresados, comuniquese con el desarrollador si el error persiste", TipoMensajeSweetAlert.error);
+            await mostrarMensaje.MostrarMensajeError(await httpResponse.GetBody());
+            navigationManager.NavigateTo("/proveedor/actualizar");
+        }
+        else
+        {
+            await js.Respuesta("Exito", "Registro Actualizado Correctamente", TipoMensajeSweetAlert.success);
+            navigationManager.NavigateTo("proveedor/listar");
+        }
+    }
+}

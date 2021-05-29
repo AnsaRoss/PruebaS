@@ -1,0 +1,59 @@
+﻿@page "/producto/actualizar/{ProductoId:int}";
+@inject ProductoRepositorio repositorio;
+@inject MostrarMensajes mostrarMensaje;
+@inject NavigationManager navigationManager;
+@inject IJSRuntime js
+
+<div class="form-group mx-sm-3 mb-2" style="text-align:center">
+    <h3>Editar Producto</h3>
+</div>
+@if (producto == null)
+{
+    <text>Cargando...</text>
+}
+else
+{
+    <FormularioProducto OnValidSubmit="Editar" producto="producto"></FormularioProducto>
+}
+
+@code {
+    [Parameter] public int productoId { get; set; }
+    private Producto producto;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var httpResponse = await repositorio.GetProducto<Producto>($"api/producto/{productoId}");
+        if (httpResponse.Error)
+        {
+            if (httpResponse.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("producto/listar");
+            }
+            else
+            {
+                await mostrarMensaje.MostrarMensajeError(await httpResponse.GetBody());
+            }
+            producto = httpResponse.Response;
+        }
+
+        else
+        {
+            producto = httpResponse.Response;
+        }
+    }
+    private async Task Editar()
+    {
+        var httpResponse = await repositorio.PutProducto("api/producto", producto);
+        if (httpResponse.Error)
+        {
+            await js.Respuesta("Error", "Su registro no ha sido guardado verifique los datos ingresados, comuniquese con el desarrollador si el error persiste", TipoMensajeSweetAlert.error);
+            await mostrarMensaje.MostrarMensajeError(await httpResponse.GetBody());
+            navigationManager.NavigateTo("/producto/actualizar");
+        }
+        else
+        {
+            await js.Respuesta("Exito", "Registro Actualizado Correctamente", TipoMensajeSweetAlert.success);
+            navigationManager.NavigateTo("producto/listar");
+        }
+    }
+}
